@@ -4,6 +4,7 @@ Contoh:
     python -m autopost                    # produk berikutnya (bergiliran), lalu posting
     python -m autopost --dry-run          # buat video saja, tidak posting
     python -m autopost --product 2        # pilih produk ke-3 di products.json
+    python -m autopost --writer template  # naskah gratis tanpa AI
 """
 
 from __future__ import annotations
@@ -35,7 +36,10 @@ def main() -> int:
     ap.add_argument("--state", type=Path, default=ROOT / "autopost_state.json")
     ap.add_argument("--product", type=int, help="indeks produk (default: bergiliran)")
     ap.add_argument("--out-dir", type=Path, default=ROOT / "output")
-    ap.add_argument("--script-file", type=Path, help="pakai naskah JSON ini, lewati Claude")
+    ap.add_argument("--script-file", type=Path, help="pakai naskah JSON ini, lewati penulis naskah")
+    ap.add_argument("--writer", choices=["auto", "claude", "template"], default="auto",
+                    help="penulis naskah: claude (berbayar), template (gratis), "
+                         "auto = claude kalau ANTHROPIC_API_KEY ada, selain itu template")
     ap.add_argument("--voice", default=os.environ.get("TTS_VOICE", "id-ID-GadisNeural"))
     ap.add_argument("--no-voice", action="store_true", help="video tanpa narasi suara")
     ap.add_argument("--dry-run", action="store_true", help="buat video, jangan posting")
@@ -49,8 +53,11 @@ def main() -> int:
 
     if args.script_file:
         script = json.loads(args.script_file.read_text())
-    else:
+    elif args.writer == "claude" or (args.writer == "auto" and os.environ.get("ANTHROPIC_API_KEY")):
         from .script import write_script
+        script = write_script(product)
+    else:
+        from .template_script import write_script
         script = write_script(product)
     print(f"[2/4] Naskah: {script['title']} ({len(script['scenes'])} adegan)")
 

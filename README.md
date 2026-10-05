@@ -3,14 +3,14 @@
 Alat posting konten afiliasi Shopee ke Facebook Page.
 
 - **`dashboard.html`**: antrian posting manual (upload foto/video sendiri).
-- **`autopost/`**: **video AI otomatis**. Claude menulis naskah, suara AI membacakan narasi,
+- **`autopost/`**: **video otomatis**. Naskah ditulis dari template (gratis) atau Claude (opsional), suara AI membacakan narasi,
   ffmpeg merender video vertikal 9:16, lalu video diposting ke Facebook Page. Bisa dijalankan
   terjadwal tiap hari lewat GitHub Actions.
 
 ## Cara kerja video AI
 
 ```
-products.json ──► Claude (naskah + caption) ──► Edge TTS (suara Indonesia)
+products.json ──► naskah: template gratis / Claude ──► Edge TTS (suara Indonesia)
                                                     │
 foto produk ──► Pillow (latar + teks) ──► ffmpeg (zoom/Ken Burns, 1080x1920) ──► Facebook Page
 ```
@@ -45,7 +45,7 @@ memakai latar gradasi.
 
 | Secret (GitHub → Settings → Secrets and variables → Actions) | Isi |
 |---|---|
-| `ANTHROPIC_API_KEY` | API key dari console.anthropic.com |
+| `ANTHROPIC_API_KEY` | **Opsional, berbayar.** Kalau diisi, naskah ditulis Claude. Kalau kosong, pakai template gratis. |
 | `FB_PAGE_ID` | ID Facebook Page |
 | `FB_PAGE_TOKEN` | Page Access Token long-lived dengan izin `pages_manage_posts`, `pages_read_engagement` |
 
@@ -77,6 +77,7 @@ python -m autopost --dry-run       # buat video ke folder output/, tidak diposti
 python -m autopost                 # buat video + posting
 python -m autopost --product 2     # pilih produk tertentu
 python -m autopost --no-voice      # tanpa narasi suara
+python -m autopost --writer template   # paksa naskah template gratis
 python -m autopost --script-file naskah.json   # pakai naskah sendiri, tanpa Claude
 ```
 
@@ -84,4 +85,8 @@ python -m autopost --script-file naskah.json   # pakai naskah sendiri, tanpa Cla
 
 - Facebook mewajibkan konten afiliasi tetap mematuhi Kebijakan Konten Bermerek. Cek naskah
   hasil AI sesekali, terutama klaim produk.
-- Biaya per video: satu panggilan Claude (sekitar beberapa sen dolar). TTS dan render gratis.
+- **Biaya:** mode gratis (tanpa `ANTHROPIC_API_KEY`) Rp0. Suara Edge TTS, ffmpeg, Graph API Facebook,
+  dan GitHub Actions semuanya gratis (repo privat dapat 2.000 menit Actions per bulan, satu video butuh sekitar 2–3 menit).
+  Kalau `ANTHROPIC_API_KEY` diisi, ada biaya satu panggilan Claude per video (beberapa sen dolar).
+- Naskah template lebih bervariasi kalau `selling_points` di `products.json` diisi dengan bahasa yang enak dibaca,
+  karena kalimat itu dibacakan apa adanya.
