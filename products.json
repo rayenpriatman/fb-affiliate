@@ -1,0 +1,17 @@
+{
+  "products": [
+    {
+      "name": "Contoh: Botol Minum Tumbler 1 Liter",
+      "price": "Rp49.000",
+      "affiliate_link": "https://s.shopee.co.id/GANTI-DENGAN-LINK-AFILIASIMU",
+      "selling_points": [
+        "tahan dingin 12 jam",
+        "anti bocor, aman dibawa di tas",
+        "ada penanda waktu minum"
+      ],
+      "audience": "pekerja kantoran dan anak kuliah yang sering lupa minum",
+      "tone": "santai, relate, sedikit lucu",
+      "images": []
+    }
+  ]
+}

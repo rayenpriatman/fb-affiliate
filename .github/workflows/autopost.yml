@@ -1,0 +1,70 @@
+name: Video AI auto-post ke Facebook
+
+on:
+  schedule:
+    # 12:00 WIB setiap hari (05:00 UTC). Ubah sesuai kebutuhan.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Hanya buat video, jangan posting"
+        type: boolean
+        default: false
+      product:
+        description: "Indeks produk (kosong = bergiliran)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autopost
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ffmpeg & font
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - run: pip install -r requirements.txt
+
+      - name: Buat video & posting
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          TTS_VOICE: ${{ vars.TTS_VOICE || 'id-ID-GadisNeural' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          PRODUCT: ${{ inputs.product }}
+        run: |
+          ARGS=()
+          if [ "$DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
+          if [ -n "$PRODUCT" ]; then ARGS+=(--product "$PRODUCT"); fi
+          python -m autopost "${ARGS[@]}"
+
+      - name: Simpan video sebagai artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-${{ github.run_id }}
+          path: output/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Commit giliran produk berikutnya
+        if: success()
+        run: |
+          git config user.name "autopost-bot"
+          git config user.email "autopost-bot@users.noreply.github.com"
+          git add autopost_state.json 2>/dev/null || exit 0
+          git diff --cached --quiet || (git commit -m "autopost: update state" && git push)
