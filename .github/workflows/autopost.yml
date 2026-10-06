@@ -1,4 +1,4 @@
-name: Video AI auto-post ke Facebook
+name: Video AI auto-post ke Facebook & YouTube
 
 on:
   schedule:
@@ -12,6 +12,9 @@ on:
         default: false
       product:
         description: "Indeks produk (kosong = bergiliran)"
+        required: false
+      platforms:
+        description: "facebook,youtube (kosong = semua yang kredensialnya diset)"
         required: false
 
 permissions:
@@ -43,6 +46,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_PRIVACY: ${{ vars.YT_PRIVACY || 'public' }}
+          PLATFORMS: ${{ inputs.platforms || vars.PLATFORMS }}
           TTS_VOICE: ${{ vars.TTS_VOICE || 'id-ID-GadisNeural' }}
           DRY_RUN: ${{ inputs.dry_run }}
           PRODUCT: ${{ inputs.product }}
@@ -61,8 +69,9 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # Tetap jalan kalau hanya satu platform gagal, supaya produk yang sudah terposting tidak diulang.
       - name: Commit giliran produk berikutnya
-        if: success()
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "autopost-bot"
           git config user.email "autopost-bot@users.noreply.github.com"
